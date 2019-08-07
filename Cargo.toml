@@ -21,7 +21,7 @@ version = "0.6.1"
 
 [dependencies.stm32f3]
 features = ["stm32f303", "rt"]
-version = "0.7.1"
+version = "0.8.0"
 
 # this lets you use `cargo fix`!
 [[bin]]

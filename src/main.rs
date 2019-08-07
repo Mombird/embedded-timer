@@ -17,10 +17,12 @@ extern crate panic_semihosting; // logs messages to the host stderr; requires a 
 
 use f3::hal::delay::Delay;
 use f3::hal::prelude::*;
-use f3::hal::stm32f30x;
-use f3::hal::stm32f30x::{gpioa,GPIOA};
+//use f3::hal::stm32f30x;
+use f3::hal::stm32f30x::rcc;
+use f3::hal::stm32f30x::{self, GPIOA, RCC};
+
 //use f3::hal::gpio::gpioa::{self,PA0};
-use f3::hal::gpio::{Input, Floating};
+//use f3::hal::gpio::{Input, Floating};
 //use stm32f30x;
 use f3::led::Leds;
 use cortex_m_rt::ExceptionFrame;
@@ -43,19 +45,35 @@ fn main() -> ! {
     let delay = Delay::new(cp.SYST, clocks);
 
     // enable (power on) button
-    //let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
-    let gpioa = unsafe {&*GPIOA::ptr() };
+    let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
+    let ptr = unsafe {&*GPIOA::ptr() };
+    //rcc.ahbenr.modify(|_, w| w.iopaen().set_bit());
+    //rcc.ahb.enr().modify(|_, w| w.iopaen().enabled());
 
-    // configure button 
-    // let button = gpioa.pa0.into_floating_input
-            // (&mut gpioa.moder, &mut gpioa.pupdr);
 
+    // set button as input, floating
+    // gpioa.moder.modify(|_,w| w.moder0().input());
+    // gpioa.pupdr.write(|w| w.pupdr0().bits(0));
+        let pa0 = gpioa.pa0.into_floating_input
+            (&mut gpioa.moder, &mut gpioa.pupdr);
+
+    let mut leds = Leds::new(dp.GPIOE.split(&mut rcc.ahb));
 
     
 
 
     loop {
-        // your code goes here
+        // turn on a light with each press
+        for led in leds.iter_mut() {
+            wait_till_pressed(ptr);
+            led.on();
+        }
+
+        // turn off a light with each press
+        for led in leds.iter_mut() {
+            wait_till_pressed(ptr);
+            led.off();
+        }
     }
 }
 
