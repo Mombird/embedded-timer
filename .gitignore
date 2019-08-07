@@ -1,4 +1,9 @@
+**/*.rs.bk
+**/*.swp
+.#*
+**/*.rs.swp
+.gdb_history
 Cargo.lock
-target/*
-.*.swp
-oldstuff
+**/Cargo.lock
+target/
+**/target/
