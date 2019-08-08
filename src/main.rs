@@ -17,13 +17,11 @@ extern crate panic_semihosting; // logs messages to the host stderr; requires a 
 
 use f3::hal::delay::Delay;
 use f3::hal::prelude::*;
-//use f3::hal::stm32f30x;
 use f3::hal::stm32f30x::rcc;
 use f3::hal::stm32f30x::{self, GPIOA, RCC};
 
-//use f3::hal::gpio::gpioa::{self,PA0};
-//use f3::hal::gpio::{Input, Floating};
-//use stm32f30x;
+use f3::hal::gpio::gpioa::{self,PA0};
+use f3::hal::gpio::{Input, Floating};
 use f3::led::Leds;
 use cortex_m_rt::ExceptionFrame;
 
@@ -46,7 +44,7 @@ fn main() -> ! {
 
     // enable (power on) button
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
-    let ptr = unsafe {&*GPIOA::ptr() };
+    //let ptr = unsafe {&*GPIOA::ptr() };
     //rcc.ahbenr.modify(|_, w| w.iopaen().set_bit());
     //rcc.ahb.enr().modify(|_, w| w.iopaen().enabled());
 
@@ -65,13 +63,13 @@ fn main() -> ! {
     loop {
         // turn on a light with each press
         for led in leds.iter_mut() {
-            wait_till_pressed(ptr);
+            wait_till_pressed(&pa0);
             led.on();
         }
 
         // turn off a light with each press
         for led in leds.iter_mut() {
-            wait_till_pressed(ptr);
+            wait_till_pressed(&pa0);
             led.off();
         }
     }
@@ -81,6 +79,16 @@ fn main() -> ! {
 
 // returns true if button pressed 
 // if button is pressed it waits until the button is released
+    pub fn wait_till_pressed(button: &PA0<Input<Floating>>) {
+
+        // loop till you get a press
+        while button.is_low() {};
+
+        // now loop til not pressed
+        while button.is_high() {};
+    }
+// old
+/*
     pub fn wait_till_pressed(gpioa: &'static stm32f30x::gpioa::RegisterBlock) {
         
         // loop till you get a press
@@ -90,6 +98,7 @@ fn main() -> ! {
         while gpioa.idr.read().idr0().bit_is_set() {};
         
     }
+    */
 
 
 
