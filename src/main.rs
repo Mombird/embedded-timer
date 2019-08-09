@@ -6,15 +6,15 @@
 
 #![no_std]
 #![no_main]
+#![allow(deprecated)]
 
-#[allow(unused_extern_crates)]
+//#[allow(unused_extern_crates)]
 
 extern crate panic_semihosting; // logs messages to the host stderr; requires a debugger
 
-use f3::hal::delay::Delay;
+// not currently using Delay
+// use f3::hal::delay::Delay;
 use f3::hal::prelude::*;
-//use f3::hal::stm32f30x::rcc;
-//use f3::hal::stm32f30x::{self};
 use f3::hal::stm32f30x;
 
 use f3::hal::gpio::gpioa::PA0;
@@ -44,14 +44,9 @@ fn main() -> ! {
 
     // enable (power on) button
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
-    //let ptr = unsafe {&*GPIOA::ptr() };
-    //rcc.ahbenr.modify(|_, w| w.iopaen().set_bit());
-    //rcc.ahb.enr().modify(|_, w| w.iopaen().enabled());
 
 
     // set button as input, floating
-    // gpioa.moder.modify(|_,w| w.moder0().input());
-    // gpioa.pupdr.write(|w| w.pupdr0().bits(0));
         let pa0 = gpioa.pa0.into_floating_input
             (&mut gpioa.moder, &mut gpioa.pupdr);
 
@@ -77,8 +72,7 @@ fn main() -> ! {
 
 
 
-// returns true if button pressed 
-// if button is pressed it waits until the button is released
+// wait till the user button is pressed then released
     pub fn wait_till_pressed(button: &PA0<Input<Floating>>) {
 
         // loop till you get a press
@@ -87,18 +81,6 @@ fn main() -> ! {
         // now loop til not pressed
         while button.is_high() {};
     }
-// old
-/*
-    pub fn wait_till_pressed(gpioa: &'static stm32f30x::gpioa::RegisterBlock) {
-        
-        // loop till you get a press
-        while !gpioa.idr.read().idr0().bit_is_set() {};
-        
-        // now loop till not pressed
-        while gpioa.idr.read().idr0().bit_is_set() {};
-        
-    }
-    */
 
 
 
@@ -114,15 +96,3 @@ fn DefaultHandler(irqn: i16) {
     panic!("Unhandled exception (IRQn = {})", irqn);
 }
 
-/*
- * pub struct Button {
-    pa0 = PA0<Input<Floating>>,
-}
-
-
-impl Button {
-    pub fn new(mut gpioa: gpioa::Parts) -> Self {
-        let pa0 = gpioa.pa0.into_floating_input
-            (&mut gpioa.moder, &mut gpioa.pupdr)
-    }
-*/

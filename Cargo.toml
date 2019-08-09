@@ -19,6 +19,13 @@ panic-semihosting = "0.5.2"
 features = ["rt"]
 version = "0.6.1"
 
+[dependencies.stm32f30x-hal]
+version = "0.2.0"
+
+[patch.crates-io]
+stm32f30x-hal = { path = "./stm32f30x-hal" }
+
+
 [dependencies.stm32f3]
 features = ["stm32f303", "rt"]
 version = "0.8.0"
