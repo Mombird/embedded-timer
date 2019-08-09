@@ -8,8 +8,6 @@
 #![no_main]
 #![allow(deprecated)]
 
-//#[allow(unused_extern_crates)]
-
 extern crate panic_semihosting; // logs messages to the host stderr; requires a debugger
 
 // not currently using Delay
@@ -20,11 +18,9 @@ use f3::hal::stm32f30x;
 use f3::hal::gpio::gpioa::PA0;
 use f3::hal::gpio::{Input, Floating};
 use f3::led::Leds;
-use cortex_m_rt::ExceptionFrame;
 
 
 use cortex_m_rt::entry;
-use cortex_m_rt::exception;
 
 #[entry]
 fn main() -> ! {
@@ -81,18 +77,4 @@ fn main() -> ! {
         // now loop til not pressed
         while button.is_high() {};
     }
-
-
-
-
-#[exception]
-fn HardFault(ef: &ExceptionFrame) -> ! {
-    panic!("{:#?}", ef);
-}
-
-
-#[exception]
-fn DefaultHandler(irqn: i16) {
-    panic!("Unhandled exception (IRQn = {})", irqn);
-}
 
