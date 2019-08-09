@@ -10,8 +10,8 @@
 
 extern crate panic_semihosting; // logs messages to the host stderr; requires a debugger
 
-// not currently using Delay
-// use f3::hal::delay::Delay;
+mod systick;
+
 use f3::hal::prelude::*;
 use f3::hal::stm32f30x;
 
@@ -25,18 +25,15 @@ use cortex_m_rt::entry;
 #[entry]
 fn main() -> ! {
     // get processor and discovery board peripherals
-    // not using time here
-    // let cp = cortex_m::Peripherals::take().unwrap();
+    let cp = cortex_m::Peripherals::take().unwrap();
     let dp = stm32f30x::Peripherals::take().unwrap();
 
-    // not using time here
-    // let mut flash = dp.FLASH.constrain();
+    let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
 
-    // not using time here
     // set up system timer using default settings of 8 MHz
-    // let clocks = rcc.cfgr.freeze(&mut flash.acr);
-    // let delay = Delay::new(cp.SYST, clocks);
+    let clocks = rcc.cfgr.freeze(&mut flash.acr);
+    let systick = systick::Systick::new(cp.SYST, clocks, 50);
 
     // enable (power on) button
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
