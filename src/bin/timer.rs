@@ -32,8 +32,9 @@ fn main() -> ! {
     let mut rcc = dp.RCC.constrain();
 
     // set up system timer using default settings of 8 MHz
-    let clocks = rcc.cfgr.freeze(&mut flash.acr);
-    let systick = systick::Systick::new(cp.SYST, clocks, 50);
+    let hal_clocks = rcc.cfgr.freeze(&mut flash.acr);
+    // let mut systick = systick::Systick::new(cp.SYST, hal_clocks, 50);
+    let mut sysclock = systick::Sysclock::new(cp.SYST, hal_clocks);
 
     // enable (power on) button
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
@@ -44,34 +45,43 @@ fn main() -> ! {
             (&mut gpioa.moder, &mut gpioa.pupdr);
 
     let mut leds = Leds::new(dp.GPIOE.split(&mut rcc.ahb));
+    let num_leds = &leds.len();
 
+
+    let led_period = sysclock.freq() as u64;
+    let toggle_offset = sysclock.freq() as u64 / 2;
+    let start_delay = sysclock.freq() as u64 / 100;
+    let off_delay = led_period * 3;
     
+    let now = sysclock.now();
+    let mut next_on = now + start_delay;
+    let mut next_off = next_on + off_delay + toggle_offset;
+    let mut on_idx = 0;
+    let mut off_idx = 0;
 
 
     loop {
-        // turn on a light with each press
-        for led in leds.iter_mut() {
-            wait_till_pressed(&pa0);
-            led.on();
+        // Turn on the next led every second
+        if sysclock.now() >= next_on {
+            leds[on_idx].on();
+            next_on += led_period;
+            if on_idx < num_leds - 1 {
+                on_idx += 1;
+            } else {
+                on_idx = 0;
+            }
         }
 
-        // turn off a light with each press
-        for led in leds.iter_mut() {
-            wait_till_pressed(&pa0);
-            led.off();
+        // Turn off the next led every second
+        if sysclock.now() >= next_off {
+            leds[off_idx].off();
+            next_off += led_period;
+            if off_idx < num_leds - 1 {
+                off_idx += 1;
+            } else {
+                off_idx = 0;
+            }
         }
     }
 }
-
-
-
-// wait till the user button is pressed then released
-    pub fn wait_till_pressed(button: &PA0<Input<Floating>>) {
-
-        // loop till you get a press
-        while button.is_low() {};
-
-        // now loop til not pressed
-        while button.is_high() {};
-    }
 
