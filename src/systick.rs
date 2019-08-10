@@ -14,41 +14,56 @@ use stm32f30x_hal::rcc::Clocks;
 
 // this code is modified from
 // https://docs.rs/stm32f30x-hal/0.2.0/src/stm32f30x_hal/delay.rs.html#11-14
-/// System timer (SysTick) as a delay provider
+/// System timer (SysTick) as a delay provider and clock
 pub struct Systick {
-    // Keeping clocks for now.  future plans are to use Clocks.sysclk
-    // to get the clock hertz.  Keeping it means that is a similar interface
-    // as hal::delay
-    #[allow(dead_code)]
-    clocks: Clocks,
+    _clocks: Clocks,
     syst: SYST,
+    period: u32,
+    // This can go more than 580 million years without wrapping.
+    currently: u64,
 }
 
 impl Systick {
     /// Configures the system timer (SysTick) as a tick provider
-    pub fn new(mut syst: SYST, clocks: Clocks, value: u32) -> Option<Self> {
+    ///
+    /// # Arguments
+    ///
+    /// * `period` - The number of milliseconds that make up a timer 
+    /// 'tick'.
+    pub fn new(mut syst: SYST, clocks: Clocks, period: u32) -> Option<Self> {
         syst.set_clock_source(SystClkSource::Core);
 
-        let value = 8000 * value -1;  // change ms to clockticks
+        // convert ms to ticks
+        let ticks = (clocks.sysclk().0 as u64 * period as u64) / 1000 - 1;  // change ms to clockticks
 
         // check to see if in range 
-        if value >= 1 && value <=0x00ffffff {
+        if ticks >= 1 && ticks <=0x00ff_ffff {
             // set countdown ticks, zero current time, start the timer
-            syst.set_reload(value);
+            syst.set_reload(ticks as u32);
             syst.clear_current();
             syst.enable_counter();
-            Some (Systick { syst, clocks })
+            Some (Systick {
+                syst: syst,
+                _clocks: clocks,
+                period: period,
+                currently: 0,
+            })
         } else {
             None
         }
 
     }
 
-
+    /// Blocks until a tick has occurred since this was last called
     pub fn wait_til_wrapped(&mut self) {
         while !SYST::has_wrapped(&mut self.syst) {};
+        self.currently += self.period as u64;
     }
 
+    /// Returns time since init in ms.
+    pub fn now(&self) -> u64 {
+        self.currently
+    }
 }
 
 /// System clock as a clock
