@@ -15,6 +15,10 @@ use stm32f30x_hal::rcc::Clocks;
 // https://docs.rs/stm32f30x-hal/0.2.0/src/stm32f30x_hal/delay.rs.html#11-14
 /// System timer (SysTick) as a delay provider
 pub struct Systick {
+    // Keeping clocks for now.  future plans are to use Clocks.sysclk
+    // to get the clock hertz.  Keeping it means that is a similar interface
+    // as hal::delay
+    #[allow(dead_code)]
     clocks: Clocks,
     syst: SYST,
 }
@@ -41,7 +45,7 @@ impl Systick {
 
 
     pub fn wait_til_wrapped(&mut self) {
-        while !SYST::has_wrapped(self.syst) {};
+        while !SYST::has_wrapped(&mut self.syst) {};
     }
 
 }
