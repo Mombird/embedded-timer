@@ -4,23 +4,22 @@
 // distribution of this software for license terms.
 
 use super::Milliseconds;
-use f3::hal::gpio::Input;
 
 //TODO: Consult w/ industry consultant on appropriate value
 /// Delay separating two single presses from a double-press
 const PRESS_BREAK: Milliseconds = 250;
 
 //TODO: Consult w/ industry consultant on appropriate value
-/// Delay separating a double-press from a bounce
-const DEBOUNCE_DELAY: Milliseconds = 100;
+/// Delay until a hold is released
+const HOLD_BREAK: Milliseconds = 100;
 
 //TODO: Consult w/ industry consultant on appropriate value
 /// Delay separating a press from a hold
 const HOLD_DELAY: Milliseconds = 750;
 
 //TODO: Consult w/ industry consultant on appropriate value
-/// Minimum press length to be counted
-const MIN_PRESS: Milliseconds = 50;
+/// Time to wait after a press to ignore switch bounce
+const DEBOUNCE_DELAY: Milliseconds = 20;
 
 /// A button that can be pressed or not.
 pub trait PushButton {
@@ -41,9 +40,9 @@ pub enum ButtonEvent {
 pub struct Button<BTN> {
     last_state: bool, // true if pressed
     last_change_time: Milliseconds,
+    poll_limit: Option<Milliseconds>,
     prev_presses: u8,
     holding: bool,
-    pressing: bool,
     button: BTN,
 }
 
@@ -52,10 +51,71 @@ impl<BTN: PushButton> Button<BTN> {
         Button {
             last_state: false,
             last_change_time: 0,
+            poll_limit: None,
             prev_presses: 0,
             holding: false,
-            pressing: false,
             button: button,
         }
     }
-}
+
+    pub fn update(&mut self, now: Milliseconds) -> Option<ButtonEvent> {
+        if let Some(s) = self.poll_limit {
+            if s < now {
+                return None
+            } else {
+                self.poll_limit = None;
+            }
+        }
+        let current_state = self.button.is_pressed();
+        let duration = now - self.last_change_time;
+
+        if current_state {
+            // button is pressed
+            if self.last_state {
+                // button is *still* pressed
+                if duration >= HOLD_DELAY {
+                    // button has been pressed long enough to count as being 
+                    // held
+                    self.holding = true;
+                    Some(ButtonEvent::Hold(self.prev_presses))
+                } else {
+                    None
+                }
+            } else { // !self.last_state
+                if duration < PRESS_BREAK {
+                    self.prev_presses += 1;
+                }
+                self.last_state = true;
+                self.last_change_time = now;
+                None
+            } // fi self.last_state
+        } else { // !current_state
+            if self.last_state {
+                self.last_state = false;
+                self.last_change_time = now;
+                self.poll_limit = Some(now + DEBOUNCE_DELAY);
+                None
+            } else { // !self.last_state
+                if self.holding {
+                    if duration >= HOLD_BREAK {
+                        self.holding = false;
+                        self.prev_presses = 0;
+                        // Some(ButtonEvent::Release)
+                        None
+                    } else {
+                        // None
+                        Some(ButtonEvent::Hold(self.prev_presses))
+                    }
+                } else { // !self.holding
+                    if duration >= PRESS_BREAK {
+                        let presses = self.prev_presses + 1;
+                        self.prev_presses = 0;
+                        Some(ButtonEvent::Press(presses))
+                    } else {
+                        None
+                    }
+                } // fi self.holding
+            } // fi self.last_state
+        } // fi current_state
+    } // end fn Button.update
+} // end impl<BTN: PushButton> Button<BTN>
