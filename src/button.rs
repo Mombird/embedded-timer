@@ -18,8 +18,8 @@ const HOLD_BREAK: Milliseconds = 100;
 const HOLD_DELAY: Milliseconds = 750;
 
 //TODO: Consult w/ industry consultant on appropriate value
-/// Time to wait after a press to ignore switch bounce
-const DEBOUNCE_DELAY: Milliseconds = 20;
+/// Time to wait after state change to ignore switch bounce
+const DEBOUNCE_DELAY: Milliseconds = 50;
 
 /// A button that can be pressed or not.
 pub trait PushButton {
@@ -38,6 +38,40 @@ pub enum ButtonEvent {
 }
 
 pub struct Button<BTN> {
+    last_state: bool,
+    poll_limit: Option<Milliseconds>,
+    button: BTN,
+}
+
+impl <BTN: PushButton> Button<BTN> {
+    pub fn new(button: BTN) -> Button<BTN> {
+        Button {
+            last_state: false,
+            poll_limit: None,
+            button: button,
+        }
+    }
+
+    pub fn update(&mut self, now: Milliseconds) -> bool {
+        if let Some(s) = self.poll_limit {
+            if s < now {
+                return false
+            } else {
+                self.poll_limit = None;
+            }
+        }
+
+        let current_state = self.button.is_pressed();
+        let last_state = self.last_state;
+        self.last_state = current_state;
+        if last_state != current_state {
+            self.poll_limit = Some(now + DEBOUNCE_DELAY);
+        }
+        current_state && !last_state
+    }
+}
+
+pub struct FancyButton<BTN> {
     last_state: bool, // true if pressed
     last_change_time: Milliseconds,
     poll_limit: Option<Milliseconds>,
@@ -46,9 +80,9 @@ pub struct Button<BTN> {
     button: BTN,
 }
 
-impl<BTN: PushButton> Button<BTN> {
-    pub fn new(button: BTN) -> Button<BTN> {
-        Button {
+impl<BTN: PushButton> FancyButton<BTN> {
+    pub fn new(button: BTN) -> FancyButton<BTN> {
+        FancyButton {
             last_state: false,
             last_change_time: 0,
             poll_limit: None,
