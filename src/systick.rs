@@ -4,6 +4,7 @@
 // distribution of this software for license terms.
 
 
+use super::Milliseconds;
 
 // use cast::u32;
 use cortex_m::peripheral::syst::SystClkSource;
@@ -19,8 +20,7 @@ pub struct Systick {
     _clocks: Clocks,
     syst: SYST,
     period: u32,
-    // This can go more than 580 million years without wrapping.
-    currently: u64,
+    currently: Milliseconds,
 }
 
 impl Systick {
@@ -30,7 +30,7 @@ impl Systick {
     ///
     /// * `period` - The number of milliseconds that make up a timer 
     /// 'tick'.
-    pub fn new(mut syst: SYST, clocks: Clocks, period: u32) -> Option<Self> {
+    pub fn new(mut syst: SYST, clocks: Clocks, period: Milliseconds) -> Option<Self> {
         syst.set_clock_source(SystClkSource::Core);
 
         // convert ms to ticks
@@ -57,11 +57,11 @@ impl Systick {
     /// Blocks until a tick has occurred since this was last called
     pub fn wait_til_wrapped(&mut self) {
         while !SYST::has_wrapped(&mut self.syst) {};
-        self.currently += self.period as u64;
+        self.currently += self.period as Milliseconds;
     }
 
     /// Returns time since init in ms.
-    pub fn now(&self) -> u64 {
+    pub fn now(&self) -> Milliseconds {
         self.currently
     }
 }

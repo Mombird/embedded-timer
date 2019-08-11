@@ -7,3 +7,4 @@
 
 pub mod systick;
 
+pub type Milliseconds = u32;
