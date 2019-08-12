@@ -31,7 +31,7 @@ pub trait PushButton {
 }
 
 
-// implement PushButton for both types of buttons used in this application
+// implement PushButton for both buttons used in this application
 
 impl PushButton for PA0<Input<Floating>> {
     fn is_pressed(&self) -> bool {
@@ -40,7 +40,6 @@ impl PushButton for PA0<Input<Floating>> {
         self.is_high()
     }
 }
-
 
 impl PushButton for PC1<Input<Floating>> {
     fn is_pressed(&self) -> bool {
@@ -51,8 +50,41 @@ impl PushButton for PC1<Input<Floating>> {
 }
 
 /// Represents a button event.
-#[derive(PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum ButtonEvent {
+    /// Button pressed
+    Push,
+    /// Button held
+    Pressed,
+    /// Button released
+    Release,
+    /// Button not pushed
+    NotPressed,
+}
+
+impl ButtonEvent {
+    /// `true` if event corresponds to button being pressed
+    pub fn is_pressed(&self) -> bool {
+        use ButtonEvent::*;
+        match self {
+            &Push | &Pressed  => true,
+            &Release | &NotPressed    => false,
+        }
+    }
+
+    /// `true` if event corresponds to a change in state
+    pub fn is_change(&self) -> bool {
+        use ButtonEvent::*;
+        match self {
+            &Push | &Release    => true,
+            &Pressed | &NotPressed  => false,
+        }
+    }
+}
+
+/// Represents a fancy button event.
+#[derive(PartialEq)]
+pub enum MultiButtonEvent {
     /// Button pressed. u8 is number of presses (double, triple, etc.)
     Press(u8),
     /// Button being held. u8 is preceding number of presses (v^,v^^^^^
@@ -62,38 +94,73 @@ pub enum ButtonEvent {
     Release,
 }
 
+/// A struct to represent a button inside a clocked loop
 pub struct Button<BTN> {
-    last_state: bool,
-    poll_limit: Option<Milliseconds>,
+    last_state: ButtonEvent,
+    debounce_delay: Option<Milliseconds>,
+    debouncing_till: Option<Milliseconds>,
     button: BTN,
 }
 
 impl<BTN: PushButton> Button<BTN> {
-    pub fn new(button: BTN) -> Button<BTN> {
+    /// Create a new Button.
+    pub fn new(button: BTN, debounce: Milliseconds) -> Button<BTN> {
+        use ButtonEvent::*;
+        // let state = if button.is_pressed() { Pressed } else { NotPressed };
         Button {
-            last_state: false,
-            poll_limit: None,
+            last_state: NotPressed,
+            debounce_delay: if 0 >= debounce { None } else { Some(debounce) },
+            debouncing_till: None,
             button: button,
         }
     }
 
-    pub fn update(&mut self, now: Milliseconds) -> Option<ButtonEvent> {
-        if let Some(s) = self.poll_limit {
-            if s < now {
-                return None;
-            } else {
-                self.poll_limit = None;
-            }
+    /// Check the button state (if not debouncing) and 
+    pub fn update(&mut self, now: Milliseconds) -> ButtonEvent {
+        use ButtonEvent::*;
+        if self.debounce(now) {
+            return self.last_state;
         }
 
-        let current_state = self.button.is_pressed();
-        let last_state = self.last_state;
-        self.last_state = current_state;
-        if last_state != current_state {
-            self.poll_limit = Some(now + DEBOUNCE_DELAY);
-            Some(if current_state {ButtonEvent::Press(1)} else {ButtonEvent::Release})
-        } else {
-            None
+        match (self.last_state.is_pressed(), self.button.is_pressed()) {
+            // if button was pressed and is still pressed
+            (true, true)    => Pressed,
+            // if button was not pressed and is still not pressed
+            (false, false)  => NotPressed,
+            // if button was not pressed and now is
+            (false, true)   => {
+                // set debounce delay
+                self.set_debounce(now);
+                self.last_state = Pressed;
+                Push
+            },
+            // if button was pressed and now is not
+            (true, false)   => {
+                self.set_debounce(now);
+                self.last_state = NotPressed;
+                Release
+            },
+        }
+    }
+
+    /// Convenience function. Sets self to return last button state without 
+    /// polling the button until `now + DEBOUNCE_DELAY`.
+    fn set_debounce(&mut self, now: Milliseconds) {
+        self.debouncing_till = self.debounce_delay.map(|d| now + d);
+    }
+
+    /// Handles debounce delay.
+    /// 
+    /// #Returns
+    /// `bool` - `true` if we're waiting for debounce period
+    fn debounce(&mut self, now: Milliseconds) -> bool {
+        match self.debouncing_till {
+            None    => false,
+            Some(s) if s < now  => true,
+            Some(_) => {
+                self.debouncing_till = None;
+                false
+            },
         }
     }
 }
@@ -101,7 +168,7 @@ impl<BTN: PushButton> Button<BTN> {
 pub struct FancyButton<BTN> {
     last_state: bool, // true if pressed
     last_change_time: Milliseconds,
-    poll_limit: Option<Milliseconds>,
+    debouncing_till: Option<Milliseconds>,
     prev_presses: u8,
     holding: bool,
     button: BTN,
@@ -112,19 +179,19 @@ impl<BTN: PushButton> FancyButton<BTN> {
         FancyButton {
             last_state: false,
             last_change_time: 0,
-            poll_limit: None,
+            debouncing_till: None,
             prev_presses: 0,
             holding: false,
             button: button,
         }
     }
 
-    pub fn update(&mut self, now: Milliseconds) -> Option<ButtonEvent> {
-        if let Some(s) = self.poll_limit {
+    pub fn update(&mut self, now: Milliseconds) -> Option<MultiButtonEvent> {
+        if let Some(s) = self.debouncing_till {
             if s < now {
                 return None;
             } else {
-                self.poll_limit = None;
+                self.debouncing_till = None;
             }
         }
         let current_state = self.button.is_pressed();
@@ -138,7 +205,7 @@ impl<BTN: PushButton> FancyButton<BTN> {
                     // button has been pressed long enough to count as being
                     // held
                     self.holding = true;
-                    Some(ButtonEvent::Hold(self.prev_presses))
+                    Some(MultiButtonEvent::Hold(self.prev_presses))
                 } else {
                     None
                 }
@@ -156,7 +223,7 @@ impl<BTN: PushButton> FancyButton<BTN> {
             if self.last_state {
                 self.last_state = false;
                 self.last_change_time = now;
-                self.poll_limit = Some(now + DEBOUNCE_DELAY);
+                self.debouncing_till = Some(now + DEBOUNCE_DELAY);
                 None
             } else {
                 // !self.last_state
@@ -164,18 +231,18 @@ impl<BTN: PushButton> FancyButton<BTN> {
                     if duration >= HOLD_BREAK {
                         self.holding = false;
                         self.prev_presses = 0;
-                        // Some(ButtonEvent::Release)
+                        // Some(MultiButtonEvent::Release)
                         None
                     } else {
                         // None
-                        Some(ButtonEvent::Hold(self.prev_presses))
+                        Some(MultiButtonEvent::Hold(self.prev_presses))
                     }
                 } else {
                     // !self.holding
                     if duration >= PRESS_BREAK {
                         let presses = self.prev_presses + 1;
                         self.prev_presses = 0;
-                        Some(ButtonEvent::Press(presses))
+                        Some(MultiButtonEvent::Press(presses))
                     } else {
                         None
                     }
