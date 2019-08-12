@@ -16,9 +16,15 @@ use stm32f30x_hal::rcc::Clocks;
 // https://docs.rs/stm32f30x-hal/0.2.0/src/stm32f30x_hal/delay.rs.html#11-14
 /// System timer (SysTick) as a delay provider and clock
 pub struct Systick {
+    /// Contains clock frequencies
     _clocks: Clocks,
+    /// The system timer.
     syst: SYST,
+    /// The length of a single tick, in ms. Can range from 1 to 0x00ff_ffff
     period: u32,
+    /// The current time since initialization in ms, accurate to `period` 
+    /// ms. Note: Only accurate if self.wait_til_wrapped is called 
+    /// frequently enough!
     currently: Milliseconds,
 }
 
@@ -52,13 +58,15 @@ impl Systick {
         }
     }
 
-    /// Blocks until a tick has occurred since this was last called
+    /// Blocks until a tick has occurred since this was last called. 
+    /// Updates the current time.
     pub fn wait_til_wrapped(&mut self) {
         while !SYST::has_wrapped(&mut self.syst) {}
         self.currently += self.period as Milliseconds;
     }
 
-    /// Returns time since init in ms.
+    /// Returns time since init in ms. Doesn't update until 
+    /// self.wait_til_wrapped() is called.
     pub fn now(&self) -> Milliseconds {
         self.currently
     }
