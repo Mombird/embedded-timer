@@ -52,12 +52,12 @@ fn main() -> ! {
     let pa0 = gpioa
         .pa0
         .into_floating_input(&mut gpioa.moder, &mut gpioa.pupdr);
-    let mut discovery_button = Button::new(pa0);
+    let mut discovery_button = Button::new(pa0, 50);
 
     let pc1 = gpioc
         .pc1
         .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr);
-    let mut knob_button: Button<PC1<Input<Floating>>> = Button::new(pc1);
+    let mut knob_button: Button<PC1<Input<Floating>>> = Button::new(pc1, 10);
 
     // initialize buzzer
     let mut buzzer = gpioc
@@ -69,26 +69,26 @@ fn main() -> ! {
     let mut leds = Leds::new(dp.GPIOE.split(&mut rcc.ahb));
 
     loop {
-        if let Some(ButtonEvent::Press(_)) = knob_button.update(systick.now()) {
+        if knob_button.update(systick.now()).is_pressed() {
             beep(&mut buzzer, &mut knob_button, &mut systick);
         }
 
-        if let Some(ButtonEvent::Press(_)) = discovery_button.update(systick.now()) {
-            index = update_LEDS(&mut leds, index);
+        if discovery_button.update(systick.now()).is_pressed() {
+            index = update_leds(&mut leds, index);
         }
 
         systick.wait_til_wrapped();
     }
 }
 
-//  update_LEDS
+//  update_leds
 //  turns on or off the next led,
 //  starting at 0 it turns on the next led,
 //  for index's from 8-15 it turns off the next led
 //
 //  if idx is larger than 15, it turns off all the leds
 //  returns the next index
-fn update_LEDS(leds: &mut Leds, index: usize) -> usize {
+fn update_leds(leds: &mut Leds, index: usize) -> usize {
     match index {
         idx if idx < 8 => { leds[idx].on() },
         idx if idx < 16 => { leds[idx - 8].off() } 
@@ -112,7 +112,7 @@ fn beep(buzz: &mut PC3<Output<PushPull>>, button: &mut Button<PC1<Input<Floating
     buzz.set_high();
 
     // loop untill button is released
-    while None == button.update(s_tick.now()) { s_tick.wait_til_wrapped()};
+    while button.update(s_tick.now()).is_pressed() { s_tick.wait_til_wrapped()};
 
     buzz.set_low();
 }
