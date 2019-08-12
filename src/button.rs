@@ -36,7 +36,10 @@ pub trait PushButton {
 impl PushButton for PA0<Input<Floating>> {
     fn is_pressed(&self) -> bool {
 
+        // embedded_hal::digital::v1 is deprecated; stuck until 
+        // stm32f30x-hal updates
 #[allow(deprecated)]
+        // board button is high when pushed
         self.is_high()
     }
 }
@@ -44,7 +47,10 @@ impl PushButton for PA0<Input<Floating>> {
 impl PushButton for PC1<Input<Floating>> {
     fn is_pressed(&self) -> bool {
 
+        // embedded_hal::digital::v1 is deprecated; stuck until 
+        // stm32f30x-hal updates
 #[allow(deprecated)]
+        // encoder button is low when pushed
         self.is_low()
     }
 }
@@ -82,19 +88,8 @@ impl ButtonEvent {
     }
 }
 
-/// Represents a fancy button event.
-#[derive(PartialEq)]
-pub enum MultiButtonEvent {
-    /// Button pressed. u8 is number of presses (double, triple, etc.)
-    Press(u8),
-    /// Button being held. u8 is preceding number of presses (v^,v^^^^^
-    /// would be Hold(1)).
-    Hold(u8),
-    /// Button hold released.
-    Release,
-}
-
-/// A struct to represent a button inside a clocked loop
+/// A struct to represent an (optionally) debounced button inside a clocked 
+/// loop.
 pub struct Button<BTN> {
     last_state: ButtonEvent,
     debounce_delay: Option<Milliseconds>,
@@ -104,6 +99,11 @@ pub struct Button<BTN> {
 
 impl<BTN: PushButton> Button<BTN> {
     /// Create a new Button.
+    /// #Params
+    /// `button` - The button this is representing.
+    /// `debounce` - The amount of time to ignore the button after a state 
+    /// change. Set to 0 (or less, if `Milliseconds` is signed) to disable 
+    /// debouncing.
     pub fn new(button: BTN, debounce: Milliseconds) -> Button<BTN> {
         use ButtonEvent::*;
         // let state = if button.is_pressed() { Pressed } else { NotPressed };
@@ -115,7 +115,13 @@ impl<BTN: PushButton> Button<BTN> {
         }
     }
 
-    /// Check the button state (if not debouncing) and 
+    /// Check the button state (if not debouncing) and return the current 
+    /// state as a `ButtonEvent`.
+    ///
+    /// #Params
+    /// `now` - The current time in milliseconds. Note that this *must* be 
+    /// a reasonably accurate representation of the actual time for the 
+    /// debouncing to work as expected.
     pub fn update(&mut self, now: Milliseconds) -> ButtonEvent {
         use ButtonEvent::*;
         if self.debounce(now) {
@@ -163,6 +169,19 @@ impl<BTN: PushButton> Button<BTN> {
             },
         }
     }
+}
+
+
+/// Represents a fancy button event.
+#[derive(PartialEq)]
+pub enum MultiButtonEvent {
+    /// Button pressed. u8 is number of presses (double, triple, etc.)
+    Press(u8),
+    /// Button being held. u8 is preceding number of presses (v^,v^^^^^
+    /// would be Hold(1)).
+    Hold(u8),
+    /// Button hold released.
+    Release,
 }
 
 pub struct FancyButton<BTN> {
