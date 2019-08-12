@@ -75,9 +75,12 @@ fn main() -> ! {
 
         if discovery_button.update(systick.now()).is_pressed() {
             index = update_leds(&mut leds, index);
+            while discovery_button.update(systick.now()).is_pressed() {
+                systick.wait_til_wrapped();
+            }
+        } else {
+            systick.wait_til_wrapped();
         }
-
-        systick.wait_til_wrapped();
     }
 }
 
