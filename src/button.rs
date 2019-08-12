@@ -96,9 +96,10 @@ pub struct Button<BTN> {
 
 impl<BTN: PushButton> Button<BTN> {
     /// Create a new Button.
-    /// #Params
-    /// `button` - The button this is representing.
-    /// `debounce` - The amount of time to ignore the button after a state
+    ///
+    /// # Params
+    /// * `button` - The button this is representing.
+    /// * `debounce` - The amount of time to ignore the button after a state
     /// change. Set to 0 (or less, if `Milliseconds` is signed) to disable
     /// debouncing.
     pub fn new(button: BTN, debounce: Milliseconds) -> Button<BTN> {
@@ -115,9 +116,9 @@ impl<BTN: PushButton> Button<BTN> {
     /// Check the button state (if not debouncing) and return the current
     /// state as a `ButtonEvent`.
     ///
-    /// #Params
-    /// `now` - The current time in milliseconds. Note that this *must* be
-    /// a reasonably accurate representation of the actual time for the
+    /// # Params
+    /// * `now` - The current time in milliseconds. Note that this **must** 
+    /// be a reasonably accurate representation of the actual time for the
     /// debouncing to work as expected.
     pub fn update(&mut self, now: Milliseconds) -> ButtonEvent {
         use ButtonEvent::*;
@@ -154,7 +155,7 @@ impl<BTN: PushButton> Button<BTN> {
 
     /// Handles debounce delay.
     ///
-    /// #Returns
+    /// # Returns
     /// `bool` - `true` if we're waiting for debounce period
     fn debounce(&mut self, now: Milliseconds) -> bool {
         match self.debouncing_till {

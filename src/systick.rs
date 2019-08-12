@@ -39,8 +39,10 @@ use stm32f30x_hal::rcc::Clocks;
 ///     let mut systick = Systick::new(cp.SYST, hal_clocks, 6).unwrap();
 ///
 ///     loop {
-///         iprintln!("{}ms have passed since timer initialization",
-///         systick.now());
+///         iprintln!(
+///             "{}ms have passed since timer initialization",
+///             systick.now()
+///             );
 ///
 ///         systick.wait_til_wrapped();
 ///     }
