@@ -15,6 +15,37 @@ use stm32f30x_hal::rcc::Clocks;
 // this code is modified from
 // https://docs.rs/stm32f30x-hal/0.2.0/src/stm32f30x_hal/delay.rs.html#11-14
 /// System timer (SysTick) as a delay provider and clock
+///
+/// # Examples
+///
+/// ```no_run
+/// use timer::systick::Systick;
+///
+/// use f3::hal::prelude::*;
+/// use f3::hal::stm32f30x;
+/// # use cortex_m_rt::entry;
+///
+/// # #[entry]
+/// fn main() -> ! {
+///     // get processor and discovery board peripherals
+///     let cp = cortex_m::Peripherals::take().unwrap();
+///     let peripherals = stm32f30x::Peripherals::take().unwrap();
+///
+///     let mut rcc = dp.RCC.constrain();
+///
+///     // set up system timer using default settings of 8 MHz
+///     let hal_clocks = rcc.cfgr.freeze(&mut flash.acr);
+///     // set up systick clock with period of 6ms
+///     let mut systick = Systick::new(cp.SYST, hal_clocks, 6).unwrap();
+///
+///     loop {
+///         iprintln!("{}ms have passed since timer initialization",
+///         systick.now());
+///
+///         systick.wait_til_wrapped();
+///     }
+/// }
+/// ```
 pub struct Systick {
     /// Contains clock frequencies
     _clocks: Clocks,
@@ -22,8 +53,8 @@ pub struct Systick {
     syst: SYST,
     /// The length of a single tick, in ms. Can range from 1 to 0x00ff_ffff
     period: u32,
-    /// The current time since initialization in ms, accurate to `period` 
-    /// ms. Note: Only accurate if self.wait_til_wrapped is called 
+    /// The current time since initialization in ms, accurate to `period`
+    /// ms. Note: Only accurate if self.wait_til_wrapped is called
     /// frequently enough!
     currently: Milliseconds,
 }
@@ -58,14 +89,14 @@ impl Systick {
         }
     }
 
-    /// Blocks until a tick has occurred since this was last called. 
+    /// Blocks until a tick has occurred since this was last called.
     /// Updates the current time.
     pub fn wait_til_wrapped(&mut self) {
         while !SYST::has_wrapped(&mut self.syst) {}
         self.currently += self.period as Milliseconds;
     }
 
-    /// Returns time since init in ms. Doesn't update until 
+    /// Returns time since init in ms. Doesn't update until
     /// self.wait_til_wrapped() is called.
     pub fn now(&self) -> Milliseconds {
         self.currently

@@ -5,10 +5,10 @@
 
 #![no_std]
 
-
 /// For representing buttons
 pub mod button;
 /// For using the system clock to keep track of time in a loop
 pub mod systick;
 
+/// Represents time in milliseconds
 pub type Milliseconds = u32;

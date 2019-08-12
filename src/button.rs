@@ -30,15 +30,13 @@ pub trait PushButton {
     fn is_pressed(&self) -> bool;
 }
 
-
 // implement PushButton for both buttons used in this application
 
 impl PushButton for PA0<Input<Floating>> {
     fn is_pressed(&self) -> bool {
-
-        // embedded_hal::digital::v1 is deprecated; stuck until 
+        // embedded_hal::digital::v1 is deprecated; stuck until
         // stm32f30x-hal updates
-#[allow(deprecated)]
+        #[allow(deprecated)]
         // board button is high when pushed
         self.is_high()
     }
@@ -46,10 +44,9 @@ impl PushButton for PA0<Input<Floating>> {
 
 impl PushButton for PC1<Input<Floating>> {
     fn is_pressed(&self) -> bool {
-
-        // embedded_hal::digital::v1 is deprecated; stuck until 
+        // embedded_hal::digital::v1 is deprecated; stuck until
         // stm32f30x-hal updates
-#[allow(deprecated)]
+        #[allow(deprecated)]
         // encoder button is low when pushed
         self.is_low()
     }
@@ -73,8 +70,8 @@ impl ButtonEvent {
     pub fn is_pressed(&self) -> bool {
         use ButtonEvent::*;
         match self {
-            &Push | &Pressed  => true,
-            &Release | &NotPressed    => false,
+            &Push | &Pressed => true,
+            &Release | &NotPressed => false,
         }
     }
 
@@ -82,13 +79,13 @@ impl ButtonEvent {
     pub fn is_change(&self) -> bool {
         use ButtonEvent::*;
         match self {
-            &Push | &Release    => true,
-            &Pressed | &NotPressed  => false,
+            &Push | &Release => true,
+            &Pressed | &NotPressed => false,
         }
     }
 }
 
-/// A struct to represent an (optionally) debounced button inside a clocked 
+/// A struct to represent an (optionally) debounced button inside a clocked
 /// loop.
 pub struct Button<BTN> {
     last_state: ButtonEvent,
@@ -101,8 +98,8 @@ impl<BTN: PushButton> Button<BTN> {
     /// Create a new Button.
     /// #Params
     /// `button` - The button this is representing.
-    /// `debounce` - The amount of time to ignore the button after a state 
-    /// change. Set to 0 (or less, if `Milliseconds` is signed) to disable 
+    /// `debounce` - The amount of time to ignore the button after a state
+    /// change. Set to 0 (or less, if `Milliseconds` is signed) to disable
     /// debouncing.
     pub fn new(button: BTN, debounce: Milliseconds) -> Button<BTN> {
         use ButtonEvent::*;
@@ -115,12 +112,12 @@ impl<BTN: PushButton> Button<BTN> {
         }
     }
 
-    /// Check the button state (if not debouncing) and return the current 
+    /// Check the button state (if not debouncing) and return the current
     /// state as a `ButtonEvent`.
     ///
     /// #Params
-    /// `now` - The current time in milliseconds. Note that this *must* be 
-    /// a reasonably accurate representation of the actual time for the 
+    /// `now` - The current time in milliseconds. Note that this *must* be
+    /// a reasonably accurate representation of the actual time for the
     /// debouncing to work as expected.
     pub fn update(&mut self, now: Milliseconds) -> ButtonEvent {
         use ButtonEvent::*;
@@ -130,47 +127,46 @@ impl<BTN: PushButton> Button<BTN> {
 
         match (self.last_state.is_pressed(), self.button.is_pressed()) {
             // if button was pressed and is still pressed
-            (true, true)    => Pressed,
+            (true, true) => Pressed,
             // if button was not pressed and is still not pressed
-            (false, false)  => NotPressed,
+            (false, false) => NotPressed,
             // if button was not pressed and now is
-            (false, true)   => {
+            (false, true) => {
                 // set debounce delay
                 self.set_debounce(now);
                 self.last_state = Pressed;
                 Push
-            },
+            }
             // if button was pressed and now is not
-            (true, false)   => {
+            (true, false) => {
                 self.set_debounce(now);
                 self.last_state = NotPressed;
                 Release
-            },
+            }
         }
     }
 
-    /// Convenience function. Sets self to return last button state without 
+    /// Convenience function. Sets self to return last button state without
     /// polling the button until `now + DEBOUNCE_DELAY`.
     fn set_debounce(&mut self, now: Milliseconds) {
         self.debouncing_till = self.debounce_delay.map(|d| now + d);
     }
 
     /// Handles debounce delay.
-    /// 
+    ///
     /// #Returns
     /// `bool` - `true` if we're waiting for debounce period
     fn debounce(&mut self, now: Milliseconds) -> bool {
         match self.debouncing_till {
-            None    => false,
-            Some(s) if s < now  => true,
+            None => false,
+            Some(s) if s < now => true,
             Some(_) => {
                 self.debouncing_till = None;
                 false
-            },
+            }
         }
     }
 }
-
 
 /// Represents a fancy button event.
 #[derive(PartialEq)]
