@@ -46,7 +46,7 @@ impl PushButton for PC1<Input<Floating>> {
     fn is_pressed(&self) -> bool {
 
 #[allow(deprecated)]
-        self.is_high()
+        self.is_low()
     }
 }
 

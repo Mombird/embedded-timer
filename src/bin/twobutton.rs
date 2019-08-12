@@ -65,18 +65,19 @@ fn main() -> ! {
         .into_push_pull_output(&mut gpioc.moder, &mut gpioc.otyper);
 
     // initialize leds
-    let index = 0;
+    let mut index = 0;
     let mut leds = Leds::new(dp.GPIOE.split(&mut rcc.ahb));
 
     loop {
         if let Some(ButtonEvent::Press(_)) = knob_button.update(systick.now()) {
-            buzzer.set_high();
             beep(&mut buzzer, &mut knob_button, &mut systick);
         }
 
         if let Some(ButtonEvent::Press(_)) = discovery_button.update(systick.now()) {
-            let index = update_LEDS(&mut leds, index);
+            index = update_LEDS(&mut leds, index);
         }
+
+        systick.wait_til_wrapped();
     }
 }
 
