@@ -3,7 +3,6 @@
 // Please see the file LICENSE in the source
 // distribution of this software for license terms.
 
-
 use super::Milliseconds;
 
 // use cast::u32;
@@ -28,21 +27,21 @@ impl Systick {
     ///
     /// # Arguments
     ///
-    /// * `period` - The number of milliseconds that make up a timer 
+    /// * `period` - The number of milliseconds that make up a timer
     /// 'tick'.
     pub fn new(mut syst: SYST, clocks: Clocks, period: Milliseconds) -> Option<Self> {
         syst.set_clock_source(SystClkSource::Core);
 
         // convert ms to ticks
-        let ticks = (clocks.sysclk().0 as u64 * period as u64) / 1000 - 1;  // change ms to clockticks
+        let ticks = (clocks.sysclk().0 as u64 * period as u64) / 1000 - 1; // change ms to clockticks
 
-        // check to see if in range 
-        if ticks >= 1 && ticks <=0x00ff_ffff {
+        // check to see if in range
+        if ticks >= 1 && ticks <= 0x00ff_ffff {
             // set countdown ticks, zero current time, start the timer
             syst.set_reload(ticks as u32);
             syst.clear_current();
             syst.enable_counter();
-            Some (Systick {
+            Some(Systick {
                 syst: syst,
                 _clocks: clocks,
                 period: period,
@@ -51,12 +50,11 @@ impl Systick {
         } else {
             None
         }
-
     }
 
     /// Blocks until a tick has occurred since this was last called
     pub fn wait_til_wrapped(&mut self) {
-        while !SYST::has_wrapped(&mut self.syst) {};
+        while !SYST::has_wrapped(&mut self.syst) {}
         self.currently += self.period as Milliseconds;
     }
 

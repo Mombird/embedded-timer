@@ -4,6 +4,10 @@
 // distribution of this software for license terms.
 
 use super::Milliseconds;
+use f3::hal::gpio::gpioa::PA0;
+use f3::hal::gpio::gpioc::PC1;
+use f3::hal::gpio::{Floating, Input};
+use f3::hal::prelude::*;
 
 //TODO: Consult w/ industry consultant on appropriate value
 /// Delay separating two single presses from a double-press
@@ -26,15 +30,36 @@ pub trait PushButton {
     fn is_pressed(&self) -> bool;
 }
 
+
+// implement PushButton for both types of buttons used in this application
+
+impl PushButton for PA0<Input<Floating>> {
+    fn is_pressed(&self) -> bool {
+
+#[allow(deprecated)]
+        self.is_high()
+    }
+}
+
+
+impl PushButton for PC1<Input<Floating>> {
+    fn is_pressed(&self) -> bool {
+
+#[allow(deprecated)]
+        self.is_high()
+    }
+}
+
 /// Represents a button event.
+#[derive(PartialEq)]
 pub enum ButtonEvent {
     /// Button pressed. u8 is number of presses (double, triple, etc.)
     Press(u8),
-    /// Button being held. u8 is preceding number of presses (v^,v^^^^^ 
+    /// Button being held. u8 is preceding number of presses (v^,v^^^^^
     /// would be Hold(1)).
     Hold(u8),
-    // /// Button hold released.
-    // Release,
+    /// Button hold released.
+    Release,
 }
 
 pub struct Button<BTN> {
@@ -43,7 +68,7 @@ pub struct Button<BTN> {
     button: BTN,
 }
 
-impl <BTN: PushButton> Button<BTN> {
+impl<BTN: PushButton> Button<BTN> {
     pub fn new(button: BTN) -> Button<BTN> {
         Button {
             last_state: false,
@@ -52,10 +77,10 @@ impl <BTN: PushButton> Button<BTN> {
         }
     }
 
-    pub fn update(&mut self, now: Milliseconds) -> bool {
+    pub fn update(&mut self, now: Milliseconds) -> Option<ButtonEvent> {
         if let Some(s) = self.poll_limit {
             if s < now {
-                return false
+                return None;
             } else {
                 self.poll_limit = None;
             }
@@ -66,8 +91,10 @@ impl <BTN: PushButton> Button<BTN> {
         self.last_state = current_state;
         if last_state != current_state {
             self.poll_limit = Some(now + DEBOUNCE_DELAY);
+            Some(if current_state {ButtonEvent::Press(1)} else {ButtonEvent::Release})
+        } else {
+            None
         }
-        current_state && !last_state
     }
 }
 
@@ -95,7 +122,7 @@ impl<BTN: PushButton> FancyButton<BTN> {
     pub fn update(&mut self, now: Milliseconds) -> Option<ButtonEvent> {
         if let Some(s) = self.poll_limit {
             if s < now {
-                return None
+                return None;
             } else {
                 self.poll_limit = None;
             }
@@ -108,14 +135,15 @@ impl<BTN: PushButton> FancyButton<BTN> {
             if self.last_state {
                 // button is *still* pressed
                 if duration >= HOLD_DELAY {
-                    // button has been pressed long enough to count as being 
+                    // button has been pressed long enough to count as being
                     // held
                     self.holding = true;
                     Some(ButtonEvent::Hold(self.prev_presses))
                 } else {
                     None
                 }
-            } else { // !self.last_state
+            } else {
+                // !self.last_state
                 if duration < PRESS_BREAK {
                     self.prev_presses += 1;
                 }
@@ -123,13 +151,15 @@ impl<BTN: PushButton> FancyButton<BTN> {
                 self.last_change_time = now;
                 None
             } // fi self.last_state
-        } else { // !current_state
+        } else {
+            // !current_state
             if self.last_state {
                 self.last_state = false;
                 self.last_change_time = now;
                 self.poll_limit = Some(now + DEBOUNCE_DELAY);
                 None
-            } else { // !self.last_state
+            } else {
+                // !self.last_state
                 if self.holding {
                     if duration >= HOLD_BREAK {
                         self.holding = false;
@@ -140,7 +170,8 @@ impl<BTN: PushButton> FancyButton<BTN> {
                         // None
                         Some(ButtonEvent::Hold(self.prev_presses))
                     }
-                } else { // !self.holding
+                } else {
+                    // !self.holding
                     if duration >= PRESS_BREAK {
                         let presses = self.prev_presses + 1;
                         self.prev_presses = 0;

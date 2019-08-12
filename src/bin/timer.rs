@@ -3,7 +3,6 @@
 // Please see the file LICENSE in the source
 // distribution of this software for license terms.
 
-
 #![no_std]
 #![no_main]
 #![allow(deprecated)]
@@ -19,7 +18,6 @@ use f3::hal::stm32f30x;
 // use f3::hal::gpio::{Input, Floating};
 use f3::led::Leds;
 
-
 use cortex_m_rt::entry;
 
 #[entry]
@@ -34,10 +32,9 @@ fn main() -> ! {
     // enable (power on) button
     // let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
 
-
     // set button as input, floating
-        // let pa0 = gpioa.pa0.into_floating_input
-        //     (&mut gpioa.moder, &mut gpioa.pupdr);
+    // let pa0 = gpioa.pa0.into_floating_input
+    //     (&mut gpioa.moder, &mut gpioa.pupdr);
 
     let mut leds = Leds::new(dp.GPIOE.split(&mut rcc.ahb));
     let num_leds = &leds.len();
@@ -49,17 +46,15 @@ fn main() -> ! {
     let hal_clocks = rcc.cfgr.freeze(&mut flash.acr);
     let mut systick = systick::Systick::new(cp.SYST, hal_clocks, 6).unwrap();
 
-
     let led_period = 1000;
     let toggle_offset = 500;
     let start_delay = 1000;
     let off_delay = 3000;
-    
+
     let mut on_idx = 0;
     let mut off_idx = 0;
     let mut next_on = start_delay;
     let mut next_off = next_on + off_delay + toggle_offset;
-
 
     loop {
         // Turn on the next led every second
@@ -86,4 +81,3 @@ fn main() -> ! {
         systick.wait_til_wrapped();
     }
 }
-

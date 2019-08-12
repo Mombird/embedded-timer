@@ -5,7 +5,7 @@
 
 #![no_std]
 
-pub mod systick;
 pub mod button;
+pub mod systick;
 
 pub type Milliseconds = u32;
