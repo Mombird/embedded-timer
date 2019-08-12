@@ -52,12 +52,12 @@ fn main() -> ! {
     let pa0 = gpioa
         .pa0
         .into_floating_input(&mut gpioa.moder, &mut gpioa.pupdr);
-    let mut discovery_button = Button::new(pa0, 50);
+    let mut discovery_button = Button::new(pa0, 0);
 
     let pc1 = gpioc
         .pc1
         .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr);
-    let mut knob_button: Button<PC1<Input<Floating>>> = Button::new(pc1, 10);
+    let mut knob_button: Button<PC1<Input<Floating>>> = Button::new(pc1, 0);
 
     // initialize buzzer
     let mut buzzer = gpioc
@@ -70,7 +70,11 @@ fn main() -> ! {
 
     loop {
         if knob_button.update(systick.now()).is_pressed() {
-            beep(&mut buzzer, &mut knob_button, &mut systick);
+            buzzer.set_high();
+            while knob_button.update(systick.now()).is_pressed() {
+                systick.wait_til_wrapped();
+            }
+            buzzer.set_low();
         }
 
         if discovery_button.update(systick.now()).is_pressed() {
@@ -111,13 +115,15 @@ fn update_leds(leds: &mut Leds, index: usize) -> usize {
 
 
 // sound the buzzer for 16 MS
-fn beep(buzz: &mut PC3<Output<PushPull>>, button: &mut Button<PC1<Input<Floating>>>, s_tick: &mut systick::Systick) {
-    buzz.set_high();
-
-    // loop untill button is released
-    while button.update(s_tick.now()).is_pressed() { s_tick.wait_til_wrapped()};
-
-    buzz.set_low();
-}
+/*
+ * fn beep(buzz: &mut PC3<Output<PushPull>>, button: &mut Button<PC1<Input<Floating>>>, s_tick: &mut systick::Systick) {
+ *     buzz.set_high();
+ * 
+ *     // loop untill button is released
+ *     while button.update(s_tick.now()).is_pressed() { s_tick.wait_til_wrapped()};
+ * 
+ *     buzz.set_low();
+ * }
+ */
 /*
 */
