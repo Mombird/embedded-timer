@@ -77,7 +77,7 @@ impl LedSnake {
             period: period,
             next_on: 0,
             next_off: period * (max_on - 1) as Milliseconds + offset,
-            running: false,
+            running: true,
         }
     }
 
