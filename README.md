@@ -17,7 +17,7 @@ This project runs on a STM32 F3 discovery board and includes 4 different
 programs.
 
 `push_button`, `clock`, and `clock_button` use just the discovery board.
-`two_button` <!--and `timer` -->use the discovery board with a button 
+`two_button` <!--and `timer` -->uses the discovery board with a button 
 hooked up to pin PC1 and a buzzer hooked up to PC3.
 
 ### push\_button
