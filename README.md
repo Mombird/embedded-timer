@@ -16,9 +16,9 @@ This project is also supported with the help of Tim Wescott
 This project runs on a STM32 F3 discovery board and includes 4 different 
 programs.
 
-`push_button` and `timer` use just the discovery board.
-`two_button` uses the discovery board with a button hooked up to pin PC1 
-and a buzzer hooked up to PC3.
+`push_button`, `clock`, and `clock_button` use just the discovery board.
+`two_button` <!--and `timer` -->use the discovery board with a button 
+hooked up to pin PC1 and a buzzer hooked up to PC3.
 
 ### push\_button
 This simple program tests the implementation of the `InputPin` trait in the 
@@ -28,21 +28,26 @@ this program with multiple loops through the code.  We also tested for
 button bounce and found the button on our board had no need for debounce 
 correction.
 
-### timer
-The timer program is very similar to the roulette project in the discover 
-tutorial.  It turns on an led for 3.5 seconds.  It turns another led each 
-second.  This code is designed to use our timer module code rather than the 
-simple delay function provided by the stm3f30x-hal crate.  This timer code 
-allows things to be effectively running concurrently.
+### clock
+The `clock` program is very similar to the roulette project in the 
+discovery tutorial.  It turns on an led for 3.5 seconds.  It turns another 
+led each second.  This code is designed to use our timer module code rather 
+than the simple delay function provided by the stm3f30x-hal crate.  This 
+timer code allows things to be effectively running concurrently.
 
 ### two\_button
 The two\button program tests the button module that implements more varied 
 button input functionallity.  There was thought put in to correct for 
 bounce though both of the buttons we used had no problems with bounce and 
 this it is turned off.  The user button has the same functionallity as in 
-the push\_button program.  The additional knob button will sound the buzzer 
-as long as it is pressed.  If one button is pressed down the other button 
-wont work.
+`push_button`.  The additional knob button will sound the buzzer as long as 
+it is pressed.  If one button is pressed down the other button wont work.
+
+### clock\_button
+`clock_button` has the same functionality as `clock`, with the addition of 
+a start-stop button.
+
+<!--TODO: Add program `timer`-->
 
 ## Development Environment
 
