@@ -1,6 +1,7 @@
 # Rust Project Embedded Discovery Board Project
 Copyright (c) 2019 Robin Gearn <rgearn@pdx.edu>, James Wescott <james@wescottdesign.com>
 
+<!--TODO:  change this to acknowledgement of discovery tutorial and embedded rust book -->
 This project starts with an exploration of A template for building applications for ARM 
     Cortex-M microcontrollers. This project is developed and maintained by the [Cortex-M team][team]
 
