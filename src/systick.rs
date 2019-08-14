@@ -103,4 +103,7 @@ impl Systick {
     pub fn now(&self) -> Milliseconds {
         self.currently
     }
+
+    /// Returns the tick length in milliseconds
+    pub fn tick_len(&self) -> Milliseconds { self.period }
 }
