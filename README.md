@@ -36,12 +36,13 @@ than the simple delay function provided by the stm3f30x-hal crate.  This
 timer code allows things to be effectively running concurrently.
 
 ### two\_button
-The two\button program tests the button module that implements more varied 
-button input functionallity.  There was thought put in to correct for 
-bounce though both of the buttons we used had no problems with bounce and 
-this it is turned off.  The user button has the same functionallity as in 
-`push_button`.  The additional knob button will sound the buzzer as long as 
-it is pressed.  If one button is pressed down the other button wont work.
+The `two_button` program tests the button module that implements more 
+varied button input functionallity.  There was thought put in to correct 
+for bounce though both of the buttons we used had no problems with bounce 
+and this it is turned off.  The user button has the same functionallity as 
+in `push_button`.  The additional knob button will sound the buzzer as long 
+as it is pressed.  If one button is pressed down the other button wont 
+work.
 
 ### clock\_button
 `clock_button` has the same functionality as `clock`, with the addition of 
