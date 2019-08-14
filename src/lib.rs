@@ -123,13 +123,17 @@ impl CompassDisplay {
         if is_running && 0 == time_remaining {
                 self.blink(now);
                 return;
+        } else if ! is_running && 0 == time_remaining {
+            for led in self.leds.iter_mut() {
+                led.off();
+            }
         } else {
             let rem = time_remaining % self.period;
             let div = (time_remaining / self.period) as u8;
 
             if div != self.num_on {
                 if div > self.num_on {
-                    for i in (self.num_on - 1)..div {
+                    for i in (self.num_on.saturating_sub(1))..div {
                         self.leds[i as usize].on();
                     }
                     if 0 != rem && self.last_was_on {
