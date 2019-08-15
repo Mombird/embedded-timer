@@ -26,6 +26,7 @@ The two\button program tests the button module that implements more varied butto
 ## Development Environment
 
 To build these projects you need 
+* run `git submodule init` and `git submodule update`
 * cross compilation support for the ARM Cortex-M
 * OpenOCD
 * a gdb for the cortexm chip. For our development we used gdb-multiarch
