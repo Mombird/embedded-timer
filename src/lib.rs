@@ -16,7 +16,7 @@ pub type Milliseconds = u32;
 
 use button::{Buttons, ButtonEvent};
 use systick::Systick;
-use f3::led::Leds;
+use f3::led::{Leds,Led};
 
 /// Tracks timer state
 pub struct SimpleTimer {
@@ -88,14 +88,130 @@ impl SimpleTimer {
     }
 }
 
+/// How fast to blink an LED
+#[derive(Debug,PartialEq,Copy,Clone)]
+enum BlinkSpeed {
+    Slow,
+    Fast,
+}
+
+
+/// A blinking LED
+struct Blinky {
+    led_idx: Option<usize>,
+    is_on: bool,
+    short_on: Milliseconds,
+    short_off: Milliseconds,
+    long_on: Milliseconds,
+    long_off: Milliseconds,
+    next_toggle: Milliseconds,
+}
+
+impl Blinky {
+    fn new(idx: Option<usize>, leds: &mut Leds,
+        short_on: Milliseconds,
+        short_off: Milliseconds,
+        long_on: Milliseconds,
+        long_off: Milliseconds
+           ) -> Blinky {
+        Blinky {
+            led_idx: idx,
+            is_on: false,
+            short_on: short_on,
+            short_off: short_off,
+            long_on: long_on,
+            long_off: long_off,
+            next_toggle: 0,
+        }
+    }
+
+    /// Blink the last LED of a group
+    fn update_seq(&mut self, now: Milliseconds, leds: &mut Leds, led_idx: Option<usize>, is_fast: bool) {
+        // Depending on whether we are, and were, blinking an led
+        match (self.led_idx, led_idx) {
+            (None, None)    => (), // nothing was or is happening, so nothing needs to.
+            (None, Some(old))   => {
+                // we're stopping blinking, so turn the old one off
+                self.is_on = Self::set_led(&mut leds[old], true);
+            },
+            (Some(new), None)   => {
+                // we're blinking an led where we weren't before.
+                // New led is assumed to start as off
+                self.is_on = false;
+                self.next_toggle = now;
+                self.toggle(&mut leds[new], is_fast);
+            },
+            (Some(new), Some(old)) if old == new    => {
+                // we're continuing to blink the same LED
+                if now >= self.next_toggle {
+                    self.toggle(&mut leds[new], is_fast);
+                }
+            },
+            (Some(new), Some(old))  =>{
+                // we're changing which LED we blink
+                self.is_on = Self::new_led_seq(new < old, self.is_on, &mut leds[old]);
+                // make sure the next toggle time will be appropriate
+                self.next_toggle = now;
+                self.toggle(&mut leds[new], is_fast);
+            },
+        } //~ end match (led_idx, self.led_idx)
+        self.led_idx = led_idx;
+    } //~ end fn Blinky.update
+
+    /// Adjusts for a new led
+    /// # Return
+    /// `true` if new led should be off
+    fn new_led_seq(new_is_lesser: bool, old_on: bool, old_led: &mut Led) -> bool {
+        // next actions depend on the direction of change and the 
+        // state of the old led
+
+        // if new is lesser matches the status of the old led, toggle the 
+        // old led
+        if new_is_lesser == old_on {
+            if old_on {
+                old_led.off();
+            } else {
+                old_led.on();
+            }
+        }
+
+        // the new led should be off if the old one wasn't on
+        !old_on
+    }
+
+
+    /// Turn the current LED off or on, returning its status.
+    /// # Return
+    /// `true` if the LED is on
+    fn set_led(led: &mut Led, off: bool) -> bool {
+        if off {
+            led.off();
+        } else {
+            led.on();
+        }
+        !off
+    }
+
+    /// Toggle the state of an LED, recording the next time to toggle it at
+    fn toggle(&mut self, led: &mut Led, is_fast: bool) {
+        self.is_on = Self::set_led(led, self.is_on);
+        self.next_toggle += match (is_fast, self.is_on) {
+            (true, true)    => self.short_on,
+            (true, false)   => self.short_off,
+            (false, false)  => self.long_off,
+            (false, true)   => self.long_on,
+        }
+    }
+}
+
+
 /// Use the ring of 8 LEDs as a display.
 pub struct CompassDisplay {
     leds: Leds,
     next_toggle: Milliseconds,
     last_was_on: bool,
     period: Milliseconds,
-    short_time: Milliseconds,
-    num_on: u8,
+    num_on: usize,
 }
 
 impl CompassDisplay {
@@ -115,10 +231,18 @@ impl CompassDisplay {
 
     /// Updates display.
     ///
+    /// # Params
+    /// * `solid` - The number of leds to be on solid.
+    /// * `blink_idx` - Which LED to blink, and how.
+    pub fn update(&mut self, solid: u8, blink: usize, speed: BlinkSpeed) {
+    }
+
+    /// Updates display.
+    ///
     /// # Panics
     /// Panics can occur if time_remaining is ever more than 
     /// 8 * self.period.
-    pub fn update(&mut self, now: Milliseconds, is_running: bool, time_remaining: Milliseconds) {
+    pub fn old_update(&mut self, now: Milliseconds, is_running: bool, time_remaining: Milliseconds) {
         // if we're going off
         if is_running && 0 == time_remaining {
                 self.blink(now);
@@ -153,7 +277,7 @@ impl CompassDisplay {
         }
     }
 
-    fn toggle_led(&mut self, now: Milliseconds, time_remaining: Milliseconds) {
+    fn old_toggle_led(&mut self, now: Milliseconds, time_remaining: Milliseconds) {
         if now >= self.next_toggle {
             if self.last_was_on {
                 self.leds[self.num_on as usize].off();
