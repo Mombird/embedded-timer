@@ -9,9 +9,9 @@
 
 extern crate panic_semihosting; // logs messages to the host stderr; requires a debugger
 
-use timer::SimpleTimer;
-use timer::systick::Systick;
 use timer::button::Buttons;
+use timer::systick::Systick;
+use timer::SimpleTimer;
 
 use f3::hal::prelude::*;
 use f3::hal::stm32f30x;

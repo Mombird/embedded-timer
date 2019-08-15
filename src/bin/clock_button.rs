@@ -9,9 +9,9 @@
 
 extern crate panic_semihosting; // logs messages to the host stderr; requires a debugger
 
-use timer::Milliseconds;
+use timer::button::{ButtonEvent, Buttons};
 use timer::systick;
-use timer::button::{Buttons,ButtonEvent};
+use timer::Milliseconds;
 
 use f3::hal::prelude::*;
 use f3::hal::stm32f30x;
@@ -35,8 +35,9 @@ fn main() -> ! {
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
 
     // set button as input, floating
-    let pa0 = gpioa.pa0.into_floating_input
-        (&mut gpioa.moder, &mut gpioa.pupdr);
+    let pa0 = gpioa
+        .pa0
+        .into_floating_input(&mut gpioa.moder, &mut gpioa.pupdr);
 
     let leds = Leds::new(dp.GPIOE.split(&mut rcc.ahb));
     // for led in leds.iter_mut() {
@@ -48,7 +49,6 @@ fn main() -> ! {
     // set up system timer using default settings of 8 MHz
     let hal_clocks = rcc.cfgr.freeze(&mut flash.acr);
     let mut systick = systick::Systick::new(cp.SYST, hal_clocks, 6).unwrap();
-
 
     loop {
         snake.update(systick.now());
@@ -68,13 +68,19 @@ struct LedSnake {
 }
 
 impl LedSnake {
-    fn new(leds: Leds, button: Buttons, period: Milliseconds, offset: Milliseconds, max_on: u8) -> LedSnake {
+    fn new(
+        leds: Leds,
+        button: Buttons,
+        period: Milliseconds,
+        offset: Milliseconds,
+        max_on: u8,
+    ) -> LedSnake {
         LedSnake {
-            leds: leds,
+            leds,
             on_idx: 0,
             off_idx: 0,
-            button: button,
-            period: period,
+            button,
+            period,
             next_on: 0,
             next_off: period * (max_on - 1) as Milliseconds + offset,
             running: true,
@@ -102,7 +108,7 @@ impl LedSnake {
                 }
             }
         }
-        // Doing this last means now CANNOT be greater then 
+        // Doing this last means now CANNOT be greater then
         // self.next_{on,off}.
         if ButtonEvent::Push == self.button.update(now) {
             self.toggle(now);
@@ -120,4 +126,3 @@ impl LedSnake {
         self.running = !self.running;
     }
 }
-
