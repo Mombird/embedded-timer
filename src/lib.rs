@@ -28,6 +28,8 @@ pub struct SimpleTimer {
     time_remaining: Milliseconds,
     /// Length of time each LED represents
     period: Milliseconds,
+    /// How much of the latest period to spend blinking quickly
+    short_time: Milliseconds,
 }
 
 const LONG_ON: Milliseconds = 600;
@@ -43,10 +45,11 @@ impl SimpleTimer {
             start_button: start,
             time_button: time,
             was: 0,
-            display: CompassDisplay::new(leds, period),
+            display: CompassDisplay::new(leds),
             is_running: false,
             time_remaining: 0,
             period: period,
+            short_time: period / 3,
         }
     }
 
@@ -70,7 +73,7 @@ impl SimpleTimer {
         if ButtonEvent::Push == self.time_button.update(now) {
             self.add_time();
         }
-        self.display.update(now, self.is_running, self.time_remaining);
+        self.update_display(now);
         self.was = now;
     }
 
@@ -84,6 +87,24 @@ impl SimpleTimer {
             if self.time_remaining > max {
                 self.time_remaining = max;
             }
+        }
+    }
+
+    fn update_display(&mut self, now: Milliseconds) {
+        let til_next_solid = (self.time_remaining % self.period) as usize;
+        let num_solid_leds = (self.time_remaining / self.period) as usize;
+        match til_next_solid {
+            0 if self.is_running => {
+                // if we're just transitioning to a new solid LED
+                if self.time_remaining > 0 {
+                    self.display.update(now, num_solid_leds - 1, BlinkKind::Slow);
+                } else { // if time is up
+                    self.display.update(now, 0, BlinkKind::All);
+                }
+            },
+            0   => self.display.update(now, num_solid_leds, BlinkKind::None),
+            x if x <= (self.short_time as usize)    => self.display.update(now, num_solid_leds, BlinkKind::Fast),
+            _   => self.display.update(now, num_solid_leds, BlinkKind::Slow),
         }
     }
 }
@@ -139,7 +160,7 @@ impl Blinky {
                     self.toggle(&mut leds[new], is_fast);
                 }
             },
-            (Some(new), Some(old))  =>{
+            (Some(new), Some(_))  =>{
                 // we're changing which LED we blink
                 // new LED should be opposite of old one
                 self.is_on = !self.is_on;
@@ -178,7 +199,7 @@ impl Blinky {
 
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum BlinkKind {
+pub enum BlinkKind {
     Fast,
     Slow,
     None,
@@ -186,12 +207,6 @@ enum BlinkKind {
 }
 
 impl BlinkKind {
-    fn is_single(&self) -> bool {
-        match self {
-            &BlinkKind::Fast | &BlinkKind::Slow   => true,
-            &BlinkKind::None | &BlinkKind::All    => false,
-        }
-    }
     fn to_some(&self, n: usize) -> Option<usize> {
         match self {
             &BlinkKind::Fast | &BlinkKind::Slow   => Some(n),
@@ -205,21 +220,17 @@ pub struct CompassDisplay {
     leds: Leds,
     next_blink: Option<Milliseconds>,
     blink_on: bool,
-    period: Milliseconds,
-    short_time: Milliseconds,
     num_on: usize,
     blinky: Blinky,
 }
 
 impl CompassDisplay {
-    pub fn new(mut leds: Leds, period: Milliseconds) -> CompassDisplay {
+    pub fn new(mut leds: Leds) -> CompassDisplay {
         Self::set_all(&mut leds, true);
         CompassDisplay {
             leds: leds,
             next_blink: None,
             blink_on: false,
-            period: period,
-            short_time: period / 3,
             num_on: 0,
             blinky: Blinky::new(None, SHORT_ON, SHORT_OFF, LONG_ON, LONG_OFF),
         }
@@ -234,23 +245,27 @@ impl CompassDisplay {
     /// Will panic if given more than 8 leds to be solid
     pub fn update(&mut self, now: Milliseconds, solid: usize, blink: BlinkKind) {
         assert!(solid <= 8, "we only have 8 leds to be solid!");
-        if None != self.next_blink && BlinkKind::All != blink {
-            self.blink_on = Self::set_all(&mut self.leds,true);
-            self.next_blink = None;
-        }
-        // if we're changing 
-        if self.num_on != solid {
-            for idx in 0..solid {
-                self.leds[idx].on();
-            }
-            for idx in solid..8 {
-                self.leds[idx].off();
-            }
-        }
-
-        self.blinky.update_seq(now, &mut self.leds, blink.to_some(solid), BlinkKind::Fast == blink);
         if BlinkKind::All == blink {
             self.blink(now);
+        } else {
+            if self.num_on != solid || None != self.next_blink {
+                if None != self.next_blink {
+                    self.blink_on = Self::set_all(&mut self.leds,true);
+                    self.next_blink = None;
+                }
+                // if we're changing 
+                if self.num_on != solid {
+                    self.num_on = solid;
+                }
+                for idx in 0..self.num_on {
+                    self.leds[idx].on();
+                }
+                for idx in self.num_on..8 {
+                    self.leds[idx].off();
+                }
+            }
+
+            self.blinky.update_seq(now, &mut self.leds, blink.to_some(solid), BlinkKind::Fast == blink);
         }
     }
 
@@ -273,7 +288,7 @@ impl CompassDisplay {
                 self.toggle(now);
             },
             Some(next) if now < next    => (),
-            Some(next)  => self.toggle(now),
+            Some(_)  => self.toggle(now),
         }
     }
     fn toggle(&mut self, last: Milliseconds) {
