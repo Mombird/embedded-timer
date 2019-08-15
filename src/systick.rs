@@ -72,6 +72,7 @@ impl Systick {
         syst.set_clock_source(SystClkSource::Core);
 
         // convert ms to ticks
+        #[allow(clippy::cast_lossless)] // no way this'll ever change
         let ticks = (clocks.sysclk().0 as u64 * period as u64) / 1000 - 1; // change ms to clockticks
 
         // check to see if in range
@@ -81,9 +82,9 @@ impl Systick {
             syst.clear_current();
             syst.enable_counter();
             Some(Systick {
-                syst: syst,
+                syst,
                 _clocks: clocks,
-                period: period,
+                period,
                 currently: 0,
             })
         } else {
@@ -102,5 +103,10 @@ impl Systick {
     /// self.wait_til_wrapped() is called.
     pub fn now(&self) -> Milliseconds {
         self.currently
+    }
+
+    /// Returns the tick length in milliseconds
+    pub fn tick_len(&self) -> Milliseconds {
+        self.period
     }
 }

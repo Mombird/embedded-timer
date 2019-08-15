@@ -4,8 +4,8 @@
 // distribution of this software for license terms.
 
 use super::Milliseconds;
-use f3::hal::gpio::gpioa::PA0;
-use f3::hal::gpio::gpioc::PC1;
+// use f3::hal::gpio::gpioa::PA0;
+// use f3::hal::gpio::gpioc::PC1;
 use f3::hal::gpio::{Floating, Input};
 use f3::hal::prelude::*;
 
@@ -25,31 +25,43 @@ const HOLD_DELAY: Milliseconds = 750;
 /// Time to wait after state change to ignore switch bounce
 const DEBOUNCE_DELAY: Milliseconds = 50;
 
+macro_rules! button_pins {
+    {$($gpiox:ident $PIN:ident $pin:ident $mode:ident $hilo:ident $debounce:literal);+}    => {$(
+            use f3::hal::gpio::$gpiox::$PIN;
+            impl PushButton for $PIN<Input<$mode>> {
+                fn is_pressed(&self) -> bool {
+                    #[allow(deprecated)]
+                    self.$hilo()
+                }
+            }
+            )+
+        pub enum Buttons {
+            $(
+                $PIN(Button<$PIN<Input<$mode>>>),
+                )+
+        }
+        impl Buttons {
+            pub fn update(&mut self, now: Milliseconds) -> ButtonEvent {
+                match self {
+                    $(Buttons::$PIN(b)   => b.update(now),)+
+                }
+            }
+            $(pub fn $pin(btn: $PIN<Input<$mode>>, debounce: Milliseconds) -> Buttons {
+                Buttons::$PIN(Button::<$PIN<Input<$mode>>>::new(btn, debounce))
+            })+
+        }
+    };
+}
+
 /// A button that can be pressed or not.
 pub trait PushButton {
     fn is_pressed(&self) -> bool;
 }
 
 // implement PushButton for both buttons used in this application
-
-impl PushButton for PA0<Input<Floating>> {
-    fn is_pressed(&self) -> bool {
-        // embedded_hal::digital::v1 is deprecated; stuck until
-        // stm32f30x-hal updates
-        #[allow(deprecated)]
-        // board button is high when pushed
-        self.is_high()
-    }
-}
-
-impl PushButton for PC1<Input<Floating>> {
-    fn is_pressed(&self) -> bool {
-        // embedded_hal::digital::v1 is deprecated; stuck until
-        // stm32f30x-hal updates
-        #[allow(deprecated)]
-        // encoder button is low when pushed
-        self.is_low()
-    }
+button_pins! {
+    gpioa PA0 pa0 Floating is_high 20;
+    gpioc PC1 pc1 Floating is_low 0
 }
 
 /// Represents a button event.
@@ -67,20 +79,20 @@ pub enum ButtonEvent {
 
 impl ButtonEvent {
     /// `true` if event corresponds to button being pressed
-    pub fn is_pressed(&self) -> bool {
+    pub fn is_pressed(self) -> bool {
         use ButtonEvent::*;
         match self {
-            &Push | &Pressed => true,
-            &Release | &NotPressed => false,
+            Push | Pressed => true,
+            Release | NotPressed => false,
         }
     }
 
     /// `true` if event corresponds to a change in state
-    pub fn is_change(&self) -> bool {
+    pub fn is_change(self) -> bool {
         use ButtonEvent::*;
         match self {
-            &Push | &Release => true,
-            &Pressed | &NotPressed => false,
+            Push | Release => true,
+            Pressed | NotPressed => false,
         }
     }
 }
@@ -107,9 +119,11 @@ impl<BTN: PushButton> Button<BTN> {
         // let state = if button.is_pressed() { Pressed } else { NotPressed };
         Button {
             last_state: NotPressed,
+            // in case Milliseconds is changed to signed type
+            #[allow(clippy::absurd_extreme_comparisons)]
             debounce_delay: if 0 >= debounce { None } else { Some(debounce) },
             debouncing_till: None,
-            button: button,
+            button,
         }
     }
 
@@ -117,7 +131,7 @@ impl<BTN: PushButton> Button<BTN> {
     /// state as a `ButtonEvent`.
     ///
     /// # Params
-    /// * `now` - The current time in milliseconds. Note that this **must** 
+    /// * `now` - The current time in milliseconds. Note that this **must**
     /// be a reasonably accurate representation of the actual time for the
     /// debouncing to work as expected.
     pub fn update(&mut self, now: Milliseconds) -> ButtonEvent {
@@ -198,7 +212,7 @@ impl<BTN: PushButton> FancyButton<BTN> {
             debouncing_till: None,
             prev_presses: 0,
             holding: false,
-            button: button,
+            button,
         }
     }
 
