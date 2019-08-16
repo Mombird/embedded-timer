@@ -13,6 +13,12 @@ pub mod systick;
 /// Represents time in milliseconds
 pub type Milliseconds = u32;
 
+use f3::hal::gpio::gpioc::PC3;
+use f3::hal::gpio::{Output, PushPull};
+use f3::hal::prelude::*;
+
+pub type Buzzer = PC3<Output<PushPull>>;
+
 use button::{ButtonEvent, Buttons};
 use f3::led::{Led, Leds};
 
@@ -39,12 +45,18 @@ const BLINK: Milliseconds = 600;
 
 impl SimpleTimer {
     /// Create a new SimpleTimer
-    pub fn new(start: Buttons, time: Buttons, leds: Leds, period: Milliseconds) -> Self {
+    pub fn new(
+        start: Buttons,
+        time: Buttons,
+        leds: Leds,
+        buzzer: Buzzer,
+        period: Milliseconds,
+    ) -> Self {
         Self {
             start_button: start,
             time_button: time,
             was: 0,
-            display: CompassDisplay::new(leds),
+            display: CompassDisplay::new(leds, buzzer),
             is_running: false,
             time_remaining: 0,
             period,
@@ -259,6 +271,7 @@ impl BlinkKind {
 /// Use the ring of 8 LEDs as a display.
 pub struct CompassDisplay {
     leds: Leds,
+    buzzer: Buzzer,
     next_blink: Option<Milliseconds>,
     blink_on: bool,
     num_on: usize,
@@ -266,10 +279,11 @@ pub struct CompassDisplay {
 }
 
 impl CompassDisplay {
-    pub fn new(mut leds: Leds) -> CompassDisplay {
-        Self::set_all(&mut leds, true);
+    pub fn new(mut leds: Leds, mut buzzer: Buzzer) -> CompassDisplay {
+        Self::set_all(&mut leds, &mut buzzer, true);
         CompassDisplay {
             leds,
+            buzzer,
             next_blink: None,
             blink_on: false,
             num_on: 0,
@@ -297,7 +311,7 @@ impl CompassDisplay {
                 // If we stopped blinking all
                 if None != self.next_blink {
                     // turn all LEDs off and record them as being such
-                    self.blink_on = Self::set_all(&mut self.leds, true);
+                    self.blink_on = Self::set_all(&mut self.leds, &mut self.buzzer, true);
                     // record that we've stopped blinking
                     self.next_blink = None;
                 }
@@ -328,12 +342,16 @@ impl CompassDisplay {
     /// Set all LEDs off or on
     /// # Return
     /// `true` if LEDs were turned on
-    fn set_all(leds: &mut Leds, off: bool) -> bool {
+    fn set_all(leds: &mut Leds, buzzer: &mut Buzzer, off: bool) -> bool {
         if off {
+            #[allow(deprecated)] // until stm32f30x-hal updates
+            buzzer.set_low();
             for led in leds.iter_mut() {
                 led.off();
             }
         } else {
+            #[allow(deprecated)] // until stm32f30x-hal updates
+            buzzer.set_high();
             for led in leds.iter_mut() {
                 led.on();
             }
@@ -354,7 +372,7 @@ impl CompassDisplay {
     }
     fn toggle(&mut self, last: Milliseconds) {
         // toggle LEDs and record status
-        self.blink_on = Self::set_all(&mut self.leds, self.blink_on);
+        self.blink_on = Self::set_all(&mut self.leds, &mut self.buzzer, self.blink_on);
         // set time of next toggle
         self.next_blink = Some(last + BLINK);
     }
