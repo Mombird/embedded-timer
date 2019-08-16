@@ -48,9 +48,9 @@ fn main() -> ! {
     let knob_button = Buttons::pc1(pc1, 0);
 
     // initialize buzzer
-    // let mut buzzer = gpioc
-    //     .pc3
-    //     .into_push_pull_output(&mut gpioc.moder, &mut gpioc.otyper);
+    let buzzer = gpioc
+        .pc3
+        .into_push_pull_output(&mut gpioc.moder, &mut gpioc.otyper);
 
     // initialize leds
     let leds = Leds::new(dp.GPIOE.split(&mut rcc.ahb));
@@ -59,7 +59,7 @@ fn main() -> ! {
     let hal_clocks = rcc.cfgr.freeze(&mut flash.acr);
     let mut systick = Systick::new(cp.SYST, hal_clocks, 6).unwrap();
 
-    let mut timer = SimpleTimer::new(knob_button, discovery_button, leds, 15000);
+    let mut timer = SimpleTimer::new(knob_button, discovery_button, leds, buzzer, 15000);
 
     loop {
         timer.update(systick.now());
