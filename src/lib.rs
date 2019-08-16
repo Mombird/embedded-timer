@@ -31,10 +31,10 @@ pub struct SimpleTimer {
     fast_time: Milliseconds,
 }
 
-const LONG_ON: Milliseconds = 1250;
-const LONG_OFF: Milliseconds = 750;
-const SHORT_ON: Milliseconds = 625;
-const SHORT_OFF: Milliseconds = 375;
+const LONG_ON: Milliseconds = 1100;
+const LONG_OFF: Milliseconds = 900;
+const SHORT_ON: Milliseconds = 550;
+const SHORT_OFF: Milliseconds = 450;
 const BLINK: Milliseconds = 600;
 
 impl SimpleTimer {
@@ -183,26 +183,22 @@ impl Blinky {
     ) {
         // Depending on whether we are, and were, blinking an led
         match (led_idx, self.led_idx) {
-            (None, None) => (), // nothing was or is happening, so nothing needs to.
-            (None, Some(old)) => {
-                // we're stopping blinking, so turn the old one off
-                self.is_on = Self::set_led(&mut leds[old], true);
-            }
+            (None, _) => (), // we're not blinking; nothing to do
+            // we've begun blinking. where we weren't before.
             (Some(new), None) => {
-                // we've begun blinking. where we weren't before.
                 // Assume the led is on to begin with
                 self.is_on = true;
                 self.next_toggle = now;
                 self.toggle(&mut leds[new], is_fast);
             }
+            // we're continuing to blink the same LED
             (Some(new), Some(old)) if old == new => {
-                // we're continuing to blink the same LED
                 if now >= self.next_toggle {
                     self.toggle(&mut leds[new], is_fast);
                 }
             }
+            // we're changing which LED we blink
             (Some(new), Some(_)) => {
-                // we're changing which LED we blink
                 // new LED should be opposite of old one
                 self.is_on = !self.is_on;
                 // make sure the next toggle time will be appropriate
