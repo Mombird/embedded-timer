@@ -93,18 +93,24 @@ impl LedSnake {
 
     fn update(&mut self, now: Milliseconds) {
         if self.running {
+            // if its time to turn one on
+            // turn on and set next index and time on
             if now >= self.next_on {
                 self.leds[self.on_idx].on();
                 self.next_on += self.period;
+                // TODO: change to (on_idx +1) % 8
                 if self.on_idx < 7 {
                     self.on_idx += 1;
                 } else {
                     self.on_idx = 0;
                 }
             }
+            // if its time to turn one off
+            // turn on and set next index and time on
             if now >= self.next_off {
                 self.leds[self.off_idx].off();
                 self.next_off += self.period;
+                // TODO: change to (on_idx +1) % 8
                 if self.off_idx < 7 {
                     self.off_idx += 1;
                 } else {
