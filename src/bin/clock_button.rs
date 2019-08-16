@@ -3,6 +3,10 @@
 // Please see the file LICENSE in the source
 // distribution of this software for license terms.
 
+//! starts a chain of leds chasing around the circle in a clockwise fashion.
+//! The motion can be started and stopped by pressing the discovery board
+//! user button.
+
 #![no_std]
 #![no_main]
 #![allow(deprecated)]
@@ -39,17 +43,17 @@ fn main() -> ! {
         .pa0
         .into_floating_input(&mut gpioa.moder, &mut gpioa.pupdr);
 
+    // initialize leds
     let leds = Leds::new(dp.GPIOE.split(&mut rcc.ahb));
-    // for led in leds.iter_mut() {
-    //     led.off();
-    // }
 
+    // create a snake to maintain the state of the board
     let mut snake = LedSnake::new(leds, Buttons::pa0(pa0, 0), 1000, 500, 4);
 
     // set up system timer using default settings of 8 MHz
     let hal_clocks = rcc.cfgr.freeze(&mut flash.acr);
     let mut systick = systick::Systick::new(cp.SYST, hal_clocks, 6).unwrap();
 
+    // update the board each time the systick timer wraps
     loop {
         snake.update(systick.now());
         systick.wait_til_wrapped();
@@ -115,6 +119,7 @@ impl LedSnake {
         }
     }
 
+    // toggles whether the snake is running or not
     fn toggle(&mut self, now: Milliseconds) {
         if self.running {
             self.next_on -= now;

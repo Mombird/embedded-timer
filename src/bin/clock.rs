@@ -3,6 +3,10 @@
 // Please see the file LICENSE in the source
 // distribution of this software for license terms.
 
+//! creates a snake of leds that move around the circle in a
+//! clockwise fashion.  This code test the systick timer code rather
+//! than using a simple delay function
+
 #![no_std]
 #![no_main]
 #![allow(deprecated)]
@@ -29,18 +33,9 @@ fn main() -> ! {
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
 
-    // enable (power on) button
-    // let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
-
-    // set button as input, floating
-    // let pa0 = gpioa.pa0.into_floating_input
-    //     (&mut gpioa.moder, &mut gpioa.pupdr);
-
+    // enable (power on) leds
     let mut leds = Leds::new(dp.GPIOE.split(&mut rcc.ahb));
     let num_leds = &leds.len();
-    // for led in leds.iter_mut() {
-    //     led.off();
-    // }
 
     // set up system timer using default settings of 8 MHz
     let hal_clocks = rcc.cfgr.freeze(&mut flash.acr);

@@ -16,9 +16,6 @@ use timer::SimpleTimer;
 use f3::hal::prelude::*;
 use f3::hal::stm32f30x;
 
-// use f3::hal::gpio::gpioa::PA0;
-// use f3::hal::gpio::gpioc::{PC1,PC3};
-// use f3::hal::gpio::{Input, Floating};
 use f3::led::Leds;
 
 use cortex_m_rt::entry;
@@ -59,8 +56,10 @@ fn main() -> ! {
     let hal_clocks = rcc.cfgr.freeze(&mut flash.acr);
     let mut systick = Systick::new(cp.SYST, hal_clocks, 6).unwrap();
 
+    // initialize the board state structure
     let mut timer = SimpleTimer::new(knob_button, discovery_button, leds, buzzer, 15000);
 
+    // update the board state each time the systick timer wraps.
     loop {
         timer.update(systick.now());
         systick.wait_til_wrapped();

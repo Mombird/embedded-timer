@@ -13,19 +13,14 @@
 /// The button on the proto board beeps the buzzer
 extern crate panic_semihosting; // logs messages to the host stderr; requires a debugger
 
-//use timer::button::{Button, PushButton};
 use timer::button::Button;
-// use timer::button::ButtonEvent;
 
 use timer::systick;
 
 use f3::hal::stm32f30x;
 
-//use f3::hal::gpio::gpioa::PA0;
 use f3::hal::gpio::gpioc::PC1;
-// use f3::hal::gpio::gpioc::PC3;
 use f3::hal::gpio::{Floating, Input};
-// use f3::hal::gpio::{PushPull, Output};
 use f3::hal::prelude::*;
 use f3::led::Leds;
 
@@ -69,6 +64,8 @@ fn main() -> ! {
     let mut leds = Leds::new(dp.GPIOE.split(&mut rcc.ahb));
 
     loop {
+        // if the knob button is pressed, beep the buzzer till
+        // the knob button is released
         if knob_button.update(systick.now()).is_pressed() {
             buzzer.set_high();
             while knob_button.update(systick.now()).is_pressed() {
@@ -77,6 +74,8 @@ fn main() -> ! {
             buzzer.set_low();
         }
 
+        // change the state of the next led if user button pressed
+        // then wate till the button is released
         if discovery_button.update(systick.now()).is_pressed() {
             index = update_leds(&mut leds, index);
             while discovery_button.update(systick.now()).is_pressed() {
@@ -110,17 +109,3 @@ fn update_leds(leds: &mut Leds, index: usize) -> usize {
     // calculate the index of the next led to change
     (index + 1) % 16
 }
-
-// sound the buzzer for 16 MS
-/*
- * fn beep(buzz: &mut PC3<Output<PushPull>>, button: &mut Button<PC1<Input<Floating>>>, s_tick: &mut systick::Systick) {
- *     buzz.set_high();
- *
- *     // loop untill button is released
- *     while button.update(s_tick.now()).is_pressed() { s_tick.wait_til_wrapped()};
- *
- *     buzz.set_low();
- * }
- */
-/*
-*/
