@@ -25,6 +25,7 @@ const HOLD_DELAY: Milliseconds = 750;
 /// Time to wait after state change to ignore switch bounce
 const DEBOUNCE_DELAY: Milliseconds = 50;
 
+/// Makes the `Buttons` enum to avoid a need for trait objects
 macro_rules! button_pins {
     {$($gpiox:ident $PIN:ident $pin:ident $mode:ident $hilo:ident $debounce:literal);+}    => {$(
             use f3::hal::gpio::$gpiox::$PIN;
