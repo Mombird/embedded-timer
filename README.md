@@ -44,24 +44,34 @@ work.
 `clock_button` has the same functionality as `clock`, with the addition of 
 a start-stop button.  It was designed to test our ability to save our state.
 
-<!--TODO: Add program `timer`-->
+### timer
+The actual timer program. A simple countdown timer, it counts down until it 
+runs out, then starts beeping. Due to the limits of the board, time can 
+only be set as up to eight intervals of 15 seconds (the latter number can 
+be changed easily). The LEDs give a rough idea of how much time is left, 
+flashing faster as it approaches time to move on to the next.
 
 ## Development Environment
 
-<!-- TODO: modify so the git submodule stuff comes after mention of cloning repo -->
 To build these projects you need 
-* run `git submodule init` and `git submodule update`
 * cross compilation support for the ARM Cortex-M
 * OpenOCD
 * a gdb for the cortexm chip. For our development we used `gdb-multiarch` 
   and `arm-none-eabi-gdb`
 
+After cloning the repository, run `git submodule init` and `git submodule 
+update`.
 
 To set up the development environment, please follow the instructions in 
 the [embedded rust 
 book](https://rust-embedded.github.io/book/intro/install.html) or the 
 [discovery 
 tutorial](https://rust-embedded.github.io/discovery/03-setup/index.html)
+
+Note that if you want to use `cargo run` you may need to alter 
+`.cargo/config`, especially if you don't use a debian-based distribution, 
+and those who AREN'T using the old version of the discovery board will need 
+to edit `openocd.cfg`.
 
 ## License
 
