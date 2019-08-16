@@ -64,16 +64,6 @@ impl SimpleTimer {
         }
     }
 
-    /*
-     * /// Start the SimpleTimer's runloop
-     * pub fn run(&mut self, clock: &mut Systick) {
-     *     loop {
-     *         self.update(clock.now());
-     *         clock.wait_til_wrapped();
-     *     }
-     * }
-     */
-
     /// Update the state of the SimpleTimer
     pub fn update(&mut self, now: Milliseconds) {
         if self.is_running {
