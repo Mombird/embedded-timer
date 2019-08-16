@@ -2,23 +2,19 @@
 Copyright (c) 2019 Robin Gearn <rgearn@pdx.edu>, James Wescott 
 <james@wescottdesign.com>
 
-<!--TODO:  change this to acknowledgement of discovery tutorial and 
-embedded rust book -->
-This project starts with an exploration of A template for building 
-applications for ARM Cortex-M microcontrollers. This project is developed 
-and maintained by the [Cortex-M team][team]
+This project could not have been completed without the [Discovery][discovery] tutorial maintained by the [Embedded Resources team][team]
 
 
 This project is also supported with the help of Tim Wescott 
 <tim@wescottdesign.com>, 
 
 ## Project Description
-This project runs on a STM32 F3 discovery board and includes 4 different 
+This project runs on a STM32 F3 discovery board and includes 5 different 
 programs.
 
 `push_button`, `clock`, and `clock_button` use just the discovery board.
-`two_button` <!--and `timer` -->uses the discovery board with a button 
-hooked up to pin PC1 and a buzzer hooked up to PC3.
+`two_button` and `timer` use the discovery board with a button 
+hooked up to pin PC1 and a buzzer hooked to PC3.
 
 ### push\_button
 This simple program tests the implementation of the `InputPin` trait in the 
@@ -46,12 +42,13 @@ work.
 
 ### clock\_button
 `clock_button` has the same functionality as `clock`, with the addition of 
-a start-stop button.
+a start-stop button.  It was designed to test our ability to save our state.
 
 <!--TODO: Add program `timer`-->
 
 ## Development Environment
 
+<!-- TODO: modify so the git submodule stuff comes after mention of cloning repo -->
 To build these projects you need 
 * run `git submodule init` and `git submodule update`
 * cross compilation support for the ARM Cortex-M
@@ -72,5 +69,6 @@ This program is licensed under the "MIT License".  Please
 see the file `LICENSE` in the source distribution of this
 software for license terms.
 
-[team]: https://github.com/rust-embedded/wg#the-cortex-m-team
+[discover]: https://rust-embedded.github.io/discovery/
+[team]: https://github.com/rust-embedded/wg#the-resources-team
 
